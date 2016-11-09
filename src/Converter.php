@@ -2,35 +2,62 @@
 
 namespace Geojson2Svg;
 
-use Symfony\Component\OptionsResolver\OptionsResolver;
-
 class Converter
 {
     /** @var array */
-    private $options;
+    protected $options;
 
     /** @var FeatureRenderer */
-    private $featureRenderer;
+    protected $featureRenderer;
+
+    /** @var Svg */
+    protected $svg;
 
     /**
+     * @param Svg             $svg
      * @param FeatureRenderer $featureRenderer
-     * @param array           $options
      */
-    public function __construct(FeatureRenderer $featureRenderer, array $options)
+    public function __construct(Svg $svg, FeatureRenderer $featureRenderer)
     {
-        $resolver = new OptionsResolver();
-        $this->configureOptions($resolver);
-        $this->options = $resolver->resolve($options);
         $this->featureRenderer = $featureRenderer;
+        $this->svg = $svg;
     }
 
     /**
      * @param string $geojsonFile
      *
-     * @return string
+     * @return Svg
      * @throws \InvalidArgumentException
      */
     public function convert($geojsonFile)
+    {
+        $features = $this->decodeGeojson($geojsonFile);
+        $bounds = $this->computeSvgBounds($features);
+        $this->svg->setBounds($bounds);
+
+        $scaleX = $this->svg->getScaleX();
+        $scaleY = $this->svg->getScaleY();
+        $offsetX = $this->svg->getOffsetX();
+        $offsetY = $this->svg->getOffsetY();
+
+        foreach ($features as $feature) {
+            if (!$this->isValidFeature($feature)) {
+                continue;
+            }
+            $this->featureRenderer->renderFeature($this->svg, $feature, $scaleX, $scaleY, $offsetX, $offsetY);
+            $this->svg->addPolygon(implode('', $this->featureRenderer->getPolygons()));
+            $this->svg->addText(implode('', $this->featureRenderer->getTexts()));
+        }
+
+        return $this->svg;
+    }
+
+    /**
+     * @param string $geojsonFile
+     *
+     * @return mixed[]
+     */
+    protected function decodeGeojson($geojsonFile)
     {
         $geojson = file_get_contents($geojsonFile);
         if (false === $geojson) {
@@ -55,8 +82,34 @@ class Converter
             }
         }
 
-        $bounds = [];
+        return $features;
+    }
+
+    /**
+     * Filter a feature.
+     * Can be overriden to filter on properties, values or anything else
+     *
+     * @param array $feature
+     *
+     * @return bool
+     */
+    protected function isValidFeature(array $feature)
+    {
+        return true;
+    }
+
+    /**
+     * @param array $features
+     *
+     * @return Bounds
+     */
+    protected function computeSvgBounds(array $features)
+    {
+        $bounds = new Bounds();
         foreach ($features as $feature) {
+            if (!$this->isValidFeature($feature)) {
+                continue;
+            }
             $geometry = $feature['geometry'];
             $coordinates = $geometry['coordinates'];
             switch ($geometry['type']) {
@@ -70,103 +123,24 @@ class Converter
             }
         }
         // Check if the geojson doesn't contain any single polygon or multipolygon
-        if (!isset($bounds['maxX'])) {
+        if (null === $bounds->getXMax()) {
             throw new \InvalidArgumentException('No polygon found.');
         }
 
-        $width = $bounds['maxX'] - $bounds['minX'];
-        $height = $bounds['maxY'] - $bounds['minY'];
-        $scaleX = $this->options['canvasWidth'] / $width;
-        $scaleY = $this->options['canvasHeight'] / $height;
-
-        $offsetX = $this->options['left'] - ($scaleX * $bounds['minX']);
-        $offsetY = $this->options['top'] + ($scaleY * $bounds['maxY']);
-
-        $polygons = [];
-        $texts = [];
-
-        foreach ($features as $feature) {
-            $this->featureRenderer->renderFeature($feature, $scaleX, $scaleY, $offsetX, $offsetY);
-            $polygons[] = implode('', $this->featureRenderer->getPolygons());
-            $texts[] = implode('', $this->featureRenderer->getTexts());
-        }
-
-        return sprintf('<svg width="%d" height="%d">%s%s</svg>',
-            round($scaleX * $width),
-            round($scaleY * $height),
-            implode('', $polygons),
-            implode('', $texts)
-        );
+        return $bounds;
     }
 
     /**
-     * @param string $svgfile Output filename
-     * @param string $content SVG content string
+     * @param array  $coordinates
+     * @param Bounds $bounds
      *
-     * @throws \RuntimeException
+     * @return Bounds
      */
-    public function saveSvg($svgfile, $content)
-    {
-        $bytes = file_put_contents($svgfile, $content);
-        if (0 == $bytes) {
-            throw new \RuntimeException(sprintf('No content written into %s.', $svgfile));
-        }
-    }
-
-    /**
-     * @param OptionsResolver $options
-     */
-    private function configureOptions(OptionsResolver $options)
-    {
-        $options->setDefaults([
-            'top'  => 0,
-            'left' => 0,
-        ]);
-        $options->setDefined([
-            'canvasWidth',
-            'canvasHeight',
-        ]);
-    }
-
-    /**
-     * @param array $coordinates
-     * @param array $bounds
-     *
-     * @return array new bounds
-     */
-    private function registerPolygon(array $coordinates, array $bounds)
+    protected function registerPolygon(array $coordinates, Bounds $bounds)
     {
         foreach ($coordinates as $subcoordinates) {
             foreach ($subcoordinates as $coordinate) {
-                if (!isset($bounds['minX'])) {
-                    $bounds['minX'] = $coordinate[0];
-                } else {
-                    if ($coordinate[0] < $bounds['minX']) {
-                        $bounds['minX'] = $coordinate[0];
-                    }
-                }
-                if (!isset($bounds['maxX'])) {
-                    $bounds['maxX'] = $coordinate[0];
-                } else {
-                    if ($coordinate[0] > $bounds['maxX']) {
-                        $bounds['maxX'] = $coordinate[0];
-                    }
-                }
-
-                if (!isset($bounds['minY'])) {
-                    $bounds['minY'] = $coordinate[1];
-                } else {
-                    if ($coordinate[1] < $bounds['minY']) {
-                        $bounds['minY'] = $coordinate[1];
-                    }
-                }
-                if (!isset($bounds['maxY'])) {
-                    $bounds['maxY'] = $coordinate[1];
-                } else {
-                    if ($coordinate[1] > $bounds['maxY']) {
-                        $bounds['maxY'] = $coordinate[1];
-                    }
-                }
+                $bounds->addCoordinate($coordinate);
             }
         }
 

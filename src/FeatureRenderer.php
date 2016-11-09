@@ -27,6 +27,10 @@ class FeatureRenderer
      * @var array
      */
     private $options;
+    /**
+     * @var string
+     */
+    protected $template = '<polygon fill="%s" stroke="%s" stroke-width="%s" points="%s" />';
 
     /**
      * @param TextRenderer|null $textRenderer
@@ -50,7 +54,7 @@ class FeatureRenderer
     private function configureOptions(OptionsResolver $options)
     {
         $options->setDefaults([
-            'strokeWidth' => 1,
+            'strokeWidth' => '1px',
             'fillColor'   => 'black',
             'strokeColor' => 'white',
         ]);
@@ -73,16 +77,12 @@ class FeatureRenderer
     }
 
     /**
+     * @param Svg   $svg
      * @param array $feature
-     * @param float $scaleX
-     * @param float $scaleY
-     * @param int   $offsetX
-     * @param int   $offsetY
      *
      * @return null
-     * @throws \RuntimeException
      */
-    public function renderFeature(array $feature, $scaleX, $scaleY, $offsetX, $offsetY)
+    public function renderFeature(Svg $svg, array $feature)
     {
         $this->polygons = [];
         $this->text = '';
@@ -97,13 +97,13 @@ class FeatureRenderer
 
         switch ($geometry['type']) {
             case 'Polygon':
-                $this->renderPolygon($coordinates, $scaleX, $scaleY, $offsetX, $offsetY);
+                $this->addPolygons($svg, $coordinates);
 
                 return null;
                 break;
             case 'MultiPolygon':
                 foreach ($coordinates as $subCoordinates) {
-                    $this->renderPolygon($subCoordinates, $scaleX, $scaleY, $offsetX, $offsetY);
+                    $this->addPolygons($svg, $subCoordinates);
                 }
 
                 return null;
@@ -113,38 +113,40 @@ class FeatureRenderer
     }
 
     /**
+     * @param Svg   $svg
      * @param array $coordinates
-     * @param float $scaleX
-     * @param float $scaleY
-     * @param int   $offsetX
-     * @param int   $offsetY
      */
-    private function renderPolygon(array $coordinates, $scaleX, $scaleY, $offsetX, $offsetY)
+    protected function addPolygons(Svg $svg, array $coordinates)
     {
-        $fillColor = $this->options['fillColor'];
-        $strokeColor = $this->options['strokeColor'];
-        $strokeWidth = $this->options['strokeWidth'];
 
         foreach ($coordinates as $subcoordinates) {
             $polygon = new Polygon();
 
             foreach ($subcoordinates as $coordinate) {
-                $x = round($scaleX * $coordinate[0] + $offsetX);
-                $y = round(-$scaleY * $coordinate[1] + $offsetY);
+                $x = $svg->getScaleX() * $coordinate[0] + $svg->getOffsetX();
+                $y = -$svg->getScaleY() * $coordinate[1] + $svg->getOffsetY();
                 $polygon->addPoint(new Point($x, $y));
             }
 
-            $this->polygons[] = sprintf('<polygon code="%s" style="fill:%s; stroke:%s; stroke-width:%d;" points="%s" />',
-                $this->text,
-                $strokeColor,
-                $fillColor,
-                $strokeWidth,
-                implode(' ', $polygon->getReducedPoints())
-            );
+            $this->polygons[] = $this->renderPolygon($polygon);
 
             if (null !== $this->textRenderer && $this->text) {
                 $this->texts[] = $this->textRenderer->renderPolygonText($polygon, $this->text);
             }
         }
+    }
+
+    protected function renderPolygon(Polygon $polygon)
+    {
+        $fillColor = $this->options['fillColor'];
+        $strokeColor = $this->options['strokeColor'];
+        $strokeWidth = $this->options['strokeWidth'];
+
+        return sprintf($this->template,
+            $strokeColor,
+            $fillColor,
+            $strokeWidth,
+            implode(' ', $polygon->getReducedPoints())
+        );
     }
 }

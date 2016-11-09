@@ -174,6 +174,9 @@ class Polygon
         $this->ySum = $ySum;
     }
 
+    /**
+     * @return PointInterface[]
+     */
     public function reduce()
     {
         $epsilon = 1;
@@ -183,6 +186,9 @@ class Polygon
         return $this->reducedPoints;
     }
 
+    /**
+     * @return PointInterface[]
+     */
     public function getReducedPoints()
     {
         if (null === $this->reducedPoints) {
