@@ -1,6 +1,8 @@
 GeoJSON to SVG
 ==============
 
+[![Build Status](https://travis-ci.org/jmleroux/geojson2svg.svg?branch=master)](https://travis-ci.org/jmleroux/geojson2svg)
+
 A simple PHP library to convert geojson file to svg file.
 
 Rewrite from chrishadi/geojson2svg.
