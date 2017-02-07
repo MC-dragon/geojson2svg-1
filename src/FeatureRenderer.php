@@ -118,7 +118,6 @@ class FeatureRenderer
      */
     protected function addPolygons(Svg $svg, array $coordinates)
     {
-
         foreach ($coordinates as $subcoordinates) {
             $polygon = new Polygon();
 
