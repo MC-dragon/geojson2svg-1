@@ -32,19 +32,14 @@ class Converter
     public function convert($geojsonFile)
     {
         $features = $this->decodeGeojson($geojsonFile);
-        $bounds = $this->computeSvgBounds($features);
+        $bounds = new Bounds(file_get_contents($geojsonFile));
         $this->svg->setBounds($bounds);
-
-        $scaleX = $this->svg->getScaleX();
-        $scaleY = $this->svg->getScaleY();
-        $offsetX = $this->svg->getOffsetX();
-        $offsetY = $this->svg->getOffsetY();
 
         foreach ($features as $feature) {
             if (!$this->isValidFeature($feature)) {
                 continue;
             }
-            $this->featureRenderer->renderFeature($this->svg, $feature, $scaleX, $scaleY, $offsetX, $offsetY);
+            $this->featureRenderer->renderFeature($this->svg, $feature);
             $this->svg->addPolygon(implode('', $this->featureRenderer->getPolygons()));
             $this->svg->addText(implode('', $this->featureRenderer->getTexts()));
         }
@@ -56,12 +51,15 @@ class Converter
      * @param string $geojsonFile
      *
      * @return mixed[]
+     *
+     * @throws \RuntimeException
+     * @throws InvalidGeoJsonException
      */
     protected function decodeGeojson($geojsonFile)
     {
         $geojson = file_get_contents($geojsonFile);
         if (false === $geojson) {
-            throw new \InvalidArgumentException('Fail to read input file.');
+            throw new \RuntimeException('Fail to read input file.');
         }
 
         $object = json_decode($geojson, true);
@@ -78,7 +76,7 @@ class Converter
             ) {
                 $features = $object;
             } else {
-                throw new \InvalidArgumentException('Unsupported GeoJSON format.');
+                throw new InvalidGeoJsonException('Unsupported GeoJSON format.');
             }
         }
 
@@ -96,54 +94,5 @@ class Converter
     protected function isValidFeature(array $feature)
     {
         return true;
-    }
-
-    /**
-     * @param array $features
-     *
-     * @return Bounds
-     */
-    protected function computeSvgBounds(array $features)
-    {
-        $bounds = new Bounds();
-        foreach ($features as $feature) {
-            if (!$this->isValidFeature($feature)) {
-                continue;
-            }
-            $geometry = $feature['geometry'];
-            $coordinates = $geometry['coordinates'];
-            switch ($geometry['type']) {
-                case 'Polygon':
-                    $bounds = $this->registerPolygon($coordinates, $bounds);
-                    break;
-                case 'MultiPolygon':
-                    foreach ($coordinates as $polygon) {
-                        $bounds = $this->registerPolygon($polygon, $bounds);
-                    }
-            }
-        }
-        // Check if the geojson doesn't contain any single polygon or multipolygon
-        if (null === $bounds->getXMax()) {
-            throw new \InvalidArgumentException('No polygon found.');
-        }
-
-        return $bounds;
-    }
-
-    /**
-     * @param array  $coordinates
-     * @param Bounds $bounds
-     *
-     * @return Bounds
-     */
-    protected function registerPolygon(array $coordinates, Bounds $bounds)
-    {
-        foreach ($coordinates as $subcoordinates) {
-            foreach ($subcoordinates as $coordinate) {
-                $bounds->addCoordinate($coordinate);
-            }
-        }
-
-        return $bounds;
     }
 }

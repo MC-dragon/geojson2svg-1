@@ -2,23 +2,43 @@
 
 namespace Geojson2Svg;
 
+use Geometry;
+
 class Bounds
 {
-    /** @var float */
-    private $xMin;
-    /** @var float */
-    private $xMax;
-    /** @var float */
-    private $yMin;
-    /** @var float */
-    private $yMax;
+    /** @var string */
+    private $geojson;
+    /** @var Geometry */
+    private $geometry;
+    /** @var float[]
+     *array:4 [
+     *  "maxy" => 46.139315
+     *  "miny" => 45.192547
+     *  "maxx" => 0.942595
+     *  "minx" => -0.460471
+     *]
+     */
+    private $bbox;
+
+    /**
+     * @param string $geojson
+     */
+    public function __construct($geojson)
+    {
+        $this->geojson = $geojson;
+        $this->geometry = \geoPHP::load($geojson, 'json');
+        if (false === $this->geometry) {
+            throw new InvalidGeoJsonException(sprintf('Unable to load GeoJSON data'));
+        }
+        $this->bbox = $this->geometry->getBBox();
+    }
 
     /**
      * @return float
      */
     public function getXMin()
     {
-        return $this->xMin;
+        return $this->bbox['minx'];
     }
 
     /**
@@ -26,7 +46,7 @@ class Bounds
      */
     public function getXMax()
     {
-        return $this->xMax;
+        return $this->bbox['maxx'];
     }
 
     /**
@@ -34,7 +54,7 @@ class Bounds
      */
     public function getYMin()
     {
-        return $this->yMin;
+        return $this->bbox['miny'];
     }
 
     /**
@@ -42,7 +62,7 @@ class Bounds
      */
     public function getYMax()
     {
-        return $this->yMax;
+        return $this->bbox['maxy'];
     }
 
     /**
@@ -50,7 +70,7 @@ class Bounds
      */
     public function getWidth()
     {
-        return $this->xMax - $this->xMin;
+        return $this->getXMax() - $this->getXMin();
     }
 
     /**
@@ -58,42 +78,6 @@ class Bounds
      */
     public function getHeight()
     {
-        return $this->yMax - $this->yMin;
-    }
-
-    /**
-     * @param float[] $coordinate
-     */
-    public function addCoordinate(array $coordinate)
-    {
-        if (!isset($this->xMin)) {
-            $this->xMin = $coordinate[0];
-        } else {
-            if ($coordinate[0] < $this->xMin) {
-                $this->xMin = $coordinate[0];
-            }
-        }
-        if (!isset($this->xMax)) {
-            $this->xMax = $coordinate[0];
-        } else {
-            if ($coordinate[0] > $this->xMax) {
-                $this->xMax = $coordinate[0];
-            }
-        }
-
-        if (!isset($this->yMin)) {
-            $this->yMin = $coordinate[1];
-        } else {
-            if ($coordinate[1] < $this->yMin) {
-                $this->yMin = $coordinate[1];
-            }
-        }
-        if (!isset($this->yMax)) {
-            $this->yMax = $coordinate[1];
-        } else {
-            if ($coordinate[1] > $this->yMax) {
-                $this->yMax = $coordinate[1];
-            }
-        }
+        return $this->getYMax() - $this->getYMin();
     }
 }
