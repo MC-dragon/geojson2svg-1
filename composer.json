@@ -1,5 +1,6 @@
 {
     "name": "jmleroux/geojson2svg",
+    "license": "GNU GPLv3",
     "type": "project",
     "repositories": [
         {
