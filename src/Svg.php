@@ -2,47 +2,47 @@
 
 namespace Geojson2Svg;
 
+use Geometry;
+
 class Svg
 {
-    /**
-     * @var string
-     */
+    /** @var string */
     protected $template;
 
-    /**
-     * @var int
-     */
+    /** @var int */
     protected $canvasWidth;
 
-    /**
-     * @var int
-     */
+    /** @var int */
     protected $canvasHeight;
 
-    /**
-     * @var int
-     */
+    /** @var int */
     protected $scaleX;
 
-    /**
-     * @var int
-     */
+    /** @var int */
     protected $scaleY;
 
-    /**
-     * @var Polygon[]
-     */
+    /** @var Polygon[] */
     protected $polygons = [];
 
-    /**
-     * @var string[]
-     */
+    /** @var string[] */
     protected $texts = [];
 
+    /** @var Geometry */
+    private $geometry;
+
     /**
-     * @var Bounds
+     * boundaries box
+     *
+     * @var float[]
+     *
+     *  array:4 [
+     *    "maxy" => 46.139315
+     *    "miny" => 45.192547
+     *    "maxx" => 0.942595
+     *    "minx" => -0.460471
+     *  ]
      */
-    protected $bounds;
+    private $bbox;
 
     /**
      * @param int $scaleX
@@ -64,8 +64,8 @@ class Svg
     public function __toString()
     {
         $viewBox = sprintf('0 0 %d %d',
-            $this->scaleX * $this->bounds->getWidth(),
-            $this->scaleY * $this->bounds->getHeight()
+            $this->scaleX * $this->getWidth(),
+            $this->scaleY * $this->getHeight()
         );
 
         return sprintf($this->template,
@@ -117,31 +117,73 @@ class Svg
         return $this->scaleY;
     }
 
-    /**
-     * @return Bounds
-     */
-    public function getBounds()
-    {
-        return $this->bounds;
-    }
-
-    /**
-     * @param Bounds $bounds
-     */
-    public function setBounds($bounds)
-    {
-        $this->bounds = $bounds;
-    }
-
     public function getOffsetX()
     {
-        $offset = -($this->scaleX * $this->bounds->getXMin());
+        $offset = -($this->scaleX * $this->getXMin());
+
         return $offset;
     }
 
     public function getOffsetY()
     {
-        $offset = $this->scaleY * $this->bounds->getYMax();
+        $offset = $this->scaleY * $this->getYMax();
+
         return $offset;
+    }
+
+    /**
+     * @param Geometry $geometry
+     */
+    public function setGeometry($geometry)
+    {
+        $this->geometry = $geometry;
+    }
+
+    /**
+     * @return float
+     */
+    public function getXMin()
+    {
+        return $this->bbox['minx'];
+    }
+
+    /**
+     * @return float
+     */
+    public function getXMax()
+    {
+        return $this->bbox['maxx'];
+    }
+
+    /**
+     * @return float
+     */
+    public function getYMin()
+    {
+        return $this->bbox['miny'];
+    }
+
+    /**
+     * @return float
+     */
+    public function getYMax()
+    {
+        return $this->bbox['maxy'];
+    }
+
+    /**
+     * @return float
+     */
+    public function getWidth()
+    {
+        return $this->getXMax() - $this->getXMin();
+    }
+
+    /**
+     * @return float
+     */
+    public function getHeight()
+    {
+        return $this->getYMax() - $this->getYMin();
     }
 }

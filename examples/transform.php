@@ -7,15 +7,15 @@ use Geojson2Svg\TextRenderer;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$svg = new Svg(100, 100, 1000, 600);
+$svg = new Svg(100, 130, 500, 500);
 $textRenderer = new TextRenderer([]);
 $featureRenderer = new FeatureRenderer(null, []);
 $converter = new Converter($svg, $featureRenderer);
 
-$geojson = __DIR__ . '/../vendor/gregoiredavid/france-geojson/regions.geojson';
+$geojson = file_get_contents(__DIR__ . '/../vendor/gregoiredavid/france-geojson/regions.geojson');
 $svg = $converter->convert($geojson);
 file_put_contents('/tmp/regions.svg', $svg);
 
-$geojson = __DIR__ . '/../vendor/gregoiredavid/france-geojson/departements.geojson';
+$geojson = file_get_contents(__DIR__ . '/../vendor/gregoiredavid/france-geojson/departements.geojson');
 $svg = $converter->convert($geojson);
 file_put_contents('/tmp/departements.svg', $svg);

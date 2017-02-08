@@ -24,16 +24,18 @@ class Converter
     }
 
     /**
-     * @param string $geojsonFile
+     * @param string $geojson
      *
      * @return Svg
-     * @throws \InvalidArgumentException
+     * @throws InvalidGeoJsonException
      */
-    public function convert($geojsonFile)
+    public function convert($geojson)
     {
-        $features = $this->decodeGeojson($geojsonFile);
-        $bounds = new Bounds(file_get_contents($geojsonFile));
-        $this->svg->setBounds($bounds);
+        $features = $this->decodeGeojson($geojson);
+        $geometry = \geoPHP::load($geojson, 'json');
+        if (false === $geometry) {
+            throw new InvalidGeoJsonException(sprintf('Unable to load GeoJSON data'));
+        }
 
         foreach ($features as $feature) {
             if (!$this->isValidFeature($feature)) {
@@ -48,20 +50,14 @@ class Converter
     }
 
     /**
-     * @param string $geojsonFile
+     * @param string $geojson
      *
      * @return mixed[]
      *
-     * @throws \RuntimeException
      * @throws InvalidGeoJsonException
      */
-    protected function decodeGeojson($geojsonFile)
+    protected function decodeGeojson($geojson)
     {
-        $geojson = file_get_contents($geojsonFile);
-        if (false === $geojson) {
-            throw new \RuntimeException('Fail to read input file.');
-        }
-
         $object = json_decode($geojson, true);
         if (isset($object['type'])) {
             if ($object['type'] === 'FeatureCollection') {
