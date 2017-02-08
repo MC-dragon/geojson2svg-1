@@ -36,6 +36,7 @@ class Converter
         if (false === $geometry) {
             throw new InvalidGeoJsonException(sprintf('Unable to load GeoJSON data'));
         }
+        $this->svg->setGeometry($geometry);
 
         foreach ($features as $feature) {
             if (!$this->isValidFeature($feature)) {

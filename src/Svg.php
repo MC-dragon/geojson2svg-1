@@ -137,6 +137,7 @@ class Svg
     public function setGeometry($geometry)
     {
         $this->geometry = $geometry;
+        $this->bbox = $geometry->getBBox();
     }
 
     /**
