@@ -43,7 +43,7 @@ class Converter
             }
             $this->featureRenderer->renderFeature($this->svg, $feature);
             $this->svg->addPolygon(implode('', $this->featureRenderer->getPolygons()));
-            $this->svg->addText(implode('', $this->featureRenderer->getTexts()));
+            $this->svg->addText(implode('', $this->featureRenderer->getTextPolygons()));
         }
 
         return $this->svg;

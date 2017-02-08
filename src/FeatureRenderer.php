@@ -18,15 +18,15 @@ class FeatureRenderer
     /**
      * @var string[]
      */
-    private $texts = [];
+    private $textPolygons = [];
     /**
      * @var TextRenderer
      */
-    private $textRenderer;
+    protected $textRenderer;
     /**
      * @var array
      */
-    private $options;
+    protected $options;
     /**
      * @var string
      */
@@ -71,9 +71,9 @@ class FeatureRenderer
     /**
      * @return \string[]
      */
-    public function getTexts()
+    public function getTextPolygons()
     {
-        return $this->texts;
+        return $this->textPolygons;
     }
 
     /**
@@ -86,14 +86,12 @@ class FeatureRenderer
     {
         $this->polygons = [];
         $this->text = '';
-        $this->texts = [];
+        $this->textPolygons = [];
 
         $geometry = $feature['geometry'];
         $coordinates = $geometry['coordinates'];
 
-        if (isset($feature['properties']['code'])) {
-            $this->text = $feature['properties']['code'];
-        }
+        $this->customizeTemplate($feature);
 
         switch ($geometry['type']) {
             case 'Polygon':
@@ -113,6 +111,19 @@ class FeatureRenderer
     }
 
     /**
+     * Override this method to customize the template
+     *
+     * @param array $feature
+     *
+     * @return null
+     */
+    protected function customizeTemplate(array $feature)
+    {
+        $this->template = '<polygon fill="%s" stroke="%s" stroke-width="%s" points="%s" />';
+    }
+
+
+    /**
      * @param Svg   $svg
      * @param array $coordinates
      */
@@ -130,7 +141,7 @@ class FeatureRenderer
             $this->polygons[] = $this->renderPolygon($polygon);
 
             if (null !== $this->textRenderer && $this->text) {
-                $this->texts[] = $this->textRenderer->renderPolygonText($polygon, $this->text);
+                $this->textPolygons[] = $this->textRenderer->renderPolygonText($polygon, $this->text);
             }
         }
     }
