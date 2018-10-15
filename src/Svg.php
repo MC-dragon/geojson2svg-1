@@ -63,12 +63,14 @@ class Svg
 
     public function __toString()
     {
-        $viewBox = sprintf('0 0 %d %d',
+        $viewBox = sprintf(
+            '0 0 %d %d',
             $this->scaleX * $this->getWidth(),
             $this->scaleY * $this->getHeight()
         );
 
-        return sprintf($this->template,
+        return sprintf(
+            $this->template,
             $this->canvasWidth,
             $this->canvasHeight,
             $viewBox,

@@ -54,7 +54,8 @@ class TextRenderer
         $textX = round($polygon->getXSum() / $pointsCount);
         $textY = round($polygon->getYSum() / $pointsCount);
 
-        $textBuffer = sprintf('<text x="%s" y="%s" text-anchor="middle" fill="%s" style="font-size:%s">',
+        $textBuffer = sprintf(
+            '<text x="%s" y="%s" text-anchor="middle" fill="%s" style="font-size:%s">',
             $textX,
             $textY,
             $this->options['textFill'],
@@ -70,7 +71,8 @@ class TextRenderer
                     $textBuffer .= "<tspan>$textSpan</tspan>";
                     $first = false;
                 } else {
-                    $textBuffer .= sprintf('<tspan x="%s" dy="%d">%s</tspan>',
+                    $textBuffer .= sprintf(
+                        '<tspan x="%s" dy="%d">%s</tspan>',
                         $textX,
                         $this->options['lineSpacing'],
                         $textSpan

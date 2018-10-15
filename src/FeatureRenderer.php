@@ -152,7 +152,8 @@ class FeatureRenderer
         $strokeColor = $this->options['strokeColor'];
         $strokeWidth = $this->options['strokeWidth'];
 
-        return sprintf($this->template,
+        return sprintf(
+            $this->template,
             $strokeColor,
             $fillColor,
             $strokeWidth,
