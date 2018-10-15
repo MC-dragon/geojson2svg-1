@@ -1,0 +1,6 @@
+version: '2'
+
+services:
+  fpm:
+    environment:
+      PHP_XDEBUG_ENABLED: 1
